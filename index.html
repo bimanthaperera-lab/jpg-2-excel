@@ -1,0 +1,354 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>JPG → Excel — Modern UI</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+  <style>
+    :root{
+      --bg:#0f1724;
+      --card:#0b1220;
+      --muted:#94a3b8;
+      --accent-1: linear-gradient(135deg,#7c3aed 0%,#06b6d4 100%);
+      --glass: rgba(255,255,255,0.04);
+      --glass-2: rgba(255,255,255,0.02);
+      --radius: 14px;
+      --shadow: 0 6px 30px rgba(2,6,23,0.6);
+    }
+    body{
+      font-family:"Poppins", "Nunito", Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
+      background: radial-gradient(1200px 600px at 10% 10%, rgba(124,58,237,0.12), transparent),
+                  radial-gradient(1000px 500px at 90% 90%, rgba(6,182,212,0.08), transparent),
+                  var(--bg);
+      color:#e6eef8;
+    }
+    .card{background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));
+      border:1px solid rgba(255,255,255,0.04); border-radius:var(--radius); box-shadow:var(--shadow)}
+    .dropzone{border:1px dashed rgba(255,255,255,0.06); background:linear-gradient(180deg,var(--glass),transparent);transition:transform .18s ease, border-color .18s ease, box-shadow .18s ease;}
+    .dropzone.hover{transform:translateY(-6px); border-color:rgba(124,58,237,0.9)}
+    .dropzone:hover{transform:translateY(-6px); box-shadow:0 10px 30px rgba(0,0,0,0.4)}
+    .dropzone svg{transition:transform .25s ease, filter .25s ease;}
+    .dropzone:hover svg{transform:scale(1.08); filter:drop-shadow(0 0 10px rgba(6,182,212,0.6))}
+    .btn-primary{background:var(--accent-1); box-shadow:0 6px 18px rgba(12,26,64,0.5)}
+    .btn-primary:hover{transform:translateY(-2px) scale(1.03); box-shadow:0 8px 22px rgba(12,26,64,0.65)}
+    .btn-ghost{background:transparent;border:1px solid rgba(255,255,255,0.04);}
+    .btn-ghost:hover{background:rgba(255,255,255,0.04);}
+    .spinner{animation:spin .9s linear infinite}
+    @keyframes spin{to{transform:rotate(360deg)}}
+    .preview-canvas{border:1px solid rgba(255,255,255,0.04); background:var(--glass-2);}
+    .table-wrap{border:1px solid rgba(255,255,255,0.03); background:linear-gradient(180deg, rgba(255,255,255,0.01), rgba(255,255,255,0.005));}
+    table.preview thead th{position:sticky; top:0; background:linear-gradient(180deg, rgba(15,20,36,0.9), rgba(15,20,36,0.8)); backdrop-filter: blur(6px); border-bottom:1px solid rgba(255,255,255,0.04)}
+    table.preview td{border-bottom:1px dashed rgba(255,255,255,0.02)}
+    .toast{background:linear-gradient(90deg,#0b1220, rgba(12,18,32,0.9)); box-shadow:0 8px 30px rgba(2,6,23,0.6); border:1px solid rgba(255,255,255,0.03);}
+    .logo .mark{background:linear-gradient(135deg,#7c3aed,#06b6d4);box-shadow:0 6px 16px rgba(7,12,27,0.6); animation:popIn 0.6s ease forwards}
+    .logo .mark svg{filter:drop-shadow(0 2px 8px rgba(0,0,0,0.35));transition:transform .2s ease, filter .2s ease}
+    .logo .mark:hover svg{transform:scale(1.1); filter:drop-shadow(0 0 12px rgba(6,182,212,0.6))}
+    @keyframes popIn{
+      0%{transform:scale(0.6);opacity:0}
+      100%{transform:scale(1);opacity:1}
+    }
+  </style>
+</head>
+<body class="p-4 sm:p-7">
+  <header class="flex items-center gap-4 mb-4">
+    <div class="logo flex items-center gap-3">
+      <div class="mark flex items-center justify-center w-11 h-11 rounded-lg" aria-hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="white">
+          <path d="M6.5 2L2 5l4.5 3 4.5-3L6.5 2zm5 3L7 8l4.5 3 4.5-3-4.5-3zm5-3l-4.5 3 4.5 3L22 5l-5.5-3zM7 13l-5 3 4.5 3 5-3L7 13zm10 0l-4.5 3 5 3 4.5-3-5-3zm-5 3l-5 3 5 3 5-3-5-3z"/>
+        </svg>
+      </div>
+      <div>
+        <h1 class="text-lg font-bold">JPG → Excel</h1>
+        <p class="text-sm text-gray-400">Modern OCR converter with table preview & editable cells</p>
+      </div>
+    </div>
+  </header>
+
+  <main class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+    <section class="card p-4">
+      <div class="uploader flex flex-col gap-3 min-h-full">
+        <label id="dropzone" class="dropzone rounded-lg p-8 flex flex-col items-center justify-center gap-3 cursor-pointer min-h-[260px]" tabindex="0" for="fileInput">
+          <div class="flex flex-col items-center text-center">
+            <svg class="w-16 h-16 opacity-95 mb-2.5 fill-white" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="white">
+              <path d="M19.35 10.04C18.67 6.59 15.64 4 12 4 9.11 4 6.6 5.64 5.35 8.04 2.34 8.36 0 10.91 0 14c0 3.31 2.69 6 6 6h13c2.76 0 5-2.24 5-5 0-2.64-2.05-4.78-4.65-4.96zM12 10l4 4h-3v4h-2v-4H8l4-4z"/>
+            </svg>
+            <div class="hint text-xs text-gray-400 font-medium">Drag & Drop your file here<br/>Supported format: JPG, JPEG, PNG</div>
+          </div>
+        </label>
+        <input id="fileInput" type="file" accept="image/*" class="hidden" />
+
+        <div class="actions flex gap-2 items-center">
+          <button id="convertBtn" class="btn btn-primary text-white font-semibold py-2.5 px-3.5 rounded-lg flex items-center justify-center gap-2 min-w-[140px] transition-all">
+            <span class="btn-text">Convert & Preview</span>
+            <span class="spinner hidden w-4 h-4 rounded-full border-2 border-white/20 border-t-white"></span>
+          </button>
+          <button id="clearBtn" class="btn btn-ghost text-gray-400 py-2.5 px-3.5 rounded-lg flex items-center justify-center gap-2 min-w-[140px] transition-all">Clear</button>
+        </div>
+
+        <div class="mt-2 p-0">
+          <div class="text-sm text-gray-400">Options</div>
+          <label class="flex gap-2 items-center mt-2">
+            <input id="detectTable" type="checkbox" class="accent-violet-500" checked />
+            <span class="text-sm text-gray-400">Attempt table structure detection</span>
+          </label>
+        </div>
+      </div>
+    </section>
+
+    <section class="card preview-area p-4 flex flex-col gap-3">
+      <div class="preview-top flex gap-3 items-center justify-between">
+        <div>
+          <div class="text-sm text-gray-400">Preview</div>
+          <strong id="filename" class="font-bold">No file selected</strong>
+        </div>
+        <div class="flex gap-2.5 items-center">
+          <div id="statusMsg" class="text-sm text-gray-400">Idle</div>
+          <button id="downloadBtn" class="btn btn-primary hidden text-white font-semibold py-2.5 px-3.5 rounded-lg">Download Excel</button>
+        </div>
+      </div>
+
+      <div class="preview-canvas rounded-lg overflow-hidden flex items-center justify-center min-h-[260px]" id="imagePreview">
+        <div class="text-gray-400">No image uploaded</div>
+      </div>
+
+      <div class="table-wrap max-h-[520px] overflow-auto rounded-lg p-3" id="tableWrap">
+        <div class="text-gray-400 text-sm">No preview yet</div>
+      </div>
+
+      <footer class="mt-auto flex justify-between items-center text-gray-400 text-sm">
+        <div>Tip: click any cell to edit before downloading</div>
+        <div>Built by BimanthaPerera</div>
+      </footer>
+    </section>
+  </main>
+
+  <div id="toast" class="toast fixed right-5 bottom-5 py-3 px-4 rounded-lg hidden"></div>
+
+  <script>
+    const dropzone = document.getElementById('dropzone');
+    const fileInput = document.getElementById('fileInput');
+    const convertBtn = document.getElementById('convertBtn');
+    const clearBtn = document.getElementById('clearBtn');
+    const downloadBtn = document.getElementById('downloadBtn');
+    const imagePreview = document.getElementById('imagePreview');
+    const tableWrap = document.getElementById('tableWrap');
+    const filenameEl = document.getElementById('filename');
+    const statusMsg = document.getElementById('statusMsg');
+    const toast = document.getElementById('toast');
+    const detectTableCheckbox = document.getElementById('detectTable');
+
+    let currentFile = null;
+    let tableData = []; // This will now store the data for rendering and editing
+
+    // --- UI Interactions (Unchanged) ---
+    function showToast(message, isError = false) {
+      toast.textContent = message;
+      toast.className = `toast fixed right-5 bottom-5 py-3 px-4 rounded-lg ${isError ? 'bg-red-500/20 text-red-300 border border-red-500/30' : 'bg-green-500/20 text-green-300 border border-green-500/30'}`;
+      toast.classList.remove('hidden');
+      setTimeout(() => {
+        toast.classList.add('hidden');
+      }, 3000);
+    }
+
+    function setLoading(isLoading) {
+      const convertText = convertBtn.querySelector('.btn-text');
+      const convertSpinner = convertBtn.querySelector('.spinner');
+      if (isLoading) {
+        convertText.classList.add('hidden');
+        convertSpinner.classList.remove('hidden');
+        convertBtn.disabled = true;
+        statusMsg.textContent = 'Converting...';
+      } else {
+        convertText.classList.remove('hidden');
+        convertSpinner.classList.add('hidden');
+        convertBtn.disabled = false;
+        statusMsg.textContent = 'Ready';
+      }
+    }
+
+    function handleFileSelect(file) {
+      if (!file || !file.type.startsWith('image/')) {
+        showToast('Please select a valid image file (JPG, PNG).', true);
+        return;
+      }
+      currentFile = file;
+      filenameEl.textContent = file.name;
+      
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        imagePreview.innerHTML = `<img src="${e.target.result}" class="max-w-full max-h-[420px] object-contain" alt="Image preview"/>`;
+      };
+      reader.readAsDataURL(file);
+      
+      tableWrap.innerHTML = '<div class="text-gray-400 text-sm">Ready to convert.</div>';
+      downloadBtn.classList.add('hidden');
+    }
+    
+    function clearAll() {
+        currentFile = null;
+        fileInput.value = '';
+        filenameEl.textContent = 'No file selected';
+        imagePreview.innerHTML = '<div class="text-gray-400">No image uploaded</div>';
+        tableWrap.innerHTML = '<div class="text-gray-400 text-sm">No preview yet</div>';
+        downloadBtn.classList.add('hidden');
+        statusMsg.textContent = 'Idle';
+        tableData = [];
+    }
+
+    // --- Event Listeners (Unchanged) ---
+    dropzone.addEventListener('dragover', (e) => { e.preventDefault(); dropzone.classList.add('hover'); });
+    dropzone.addEventListener('dragleave', () => dropzone.classList.remove('hover'));
+    dropzone.addEventListener('drop', (e) => {
+      e.preventDefault();
+      dropzone.classList.remove('hover');
+      if (e.dataTransfer.files.length) {
+        handleFileSelect(e.dataTransfer.files[0]);
+      }
+    });
+    fileInput.addEventListener('change', () => {
+      if (fileInput.files.length) {
+        handleFileSelect(fileInput.files[0]);
+      }
+    });
+
+    clearBtn.addEventListener('click', clearAll);
+    convertBtn.addEventListener('click', () => {
+        if (!currentFile) {
+            showToast('Please select an image first!', true);
+            return;
+        }
+        convertImageToTable();
+    });
+    downloadBtn.addEventListener('click', downloadExcel);
+
+    // --- Core Logic: Call Backend and Generate Table ---
+    async function convertImageToTable() {
+      setLoading(true);
+
+      // Use FormData to send the file and options to the backend
+      const formData = new FormData();
+      formData.append('file', currentFile);
+      formData.append('detectTable', detectTableCheckbox.checked);
+
+      try {
+        const response = await fetch('http://127.0.0.1:5001/api/convert', {
+          method: 'POST',
+          body: formData,
+        });
+
+        const result = await response.json();
+
+        if (!response.ok) {
+            // Use the error message from the backend if available
+            throw new Error(result.error || `Server responded with status: ${response.status}`);
+        }
+
+        let parsedJson;
+        try {
+            parsedJson = JSON.parse(result.data);
+        } catch (e) {
+            console.error("Failed to parse JSON response from backend:", result.data);
+            throw new Error("Could not parse the data from the image. The format was unexpected.");
+        }
+
+        const detectTable = detectTableCheckbox.checked;
+
+        if (detectTable) {
+            if (Array.isArray(parsedJson) && parsedJson.every(row => Array.isArray(row))) {
+              tableData = parsedJson;
+            } else {
+              throw new Error("Expected a JSON array of arrays for the table data.");
+            }
+        } else {
+            if (Array.isArray(parsedJson) && parsedJson.every(item => typeof item === 'string')) {
+              tableData = parsedJson.map(line => [line]); // Convert to array of arrays for consistency
+            } else {
+              throw new Error("Expected a JSON array of strings for the text data.");
+            }
+        }
+
+        renderTable(tableData);
+        downloadBtn.classList.remove('hidden');
+        showToast('Conversion successful!');
+        statusMsg.textContent = "Preview Ready";
+
+      } catch (error) {
+        console.error("Conversion Error:", error);
+        showToast(`Conversion failed: ${error.message}`, true);
+        tableWrap.innerHTML = `<div class="text-red-400 p-4">Error during conversion. Please check the console for details.</div>`;
+        statusMsg.textContent = "Error";
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    // --- Render Table Logic (Updated for clarity) ---
+    function renderTable(data) {
+        if (!data || data.length === 0) {
+            tableWrap.innerHTML = '<div class="text-gray-400 text-sm">No table data extracted.</div>';
+            return;
+        }
+
+        const table = document.createElement('table');
+        table.className = 'preview w-full border-collapse text-sm';
+        const detectTable = detectTableCheckbox.checked;
+
+        // Create Header
+        const thead = document.createElement('thead');
+        const headerRow = document.createElement('tr');
+        const headers = detectTable ? data[0] : ["Extracted Text"];
+        
+        headers.forEach(headerText => {
+            const th = document.createElement('th');
+            th.className = "p-2 text-left";
+            th.textContent = headerText;
+            headerRow.appendChild(th);
+        });
+        thead.appendChild(headerRow);
+        table.appendChild(thead);
+
+        // Create Body
+        const tbody = document.createElement('tbody');
+        const dataRows = detectTable ? data.slice(1) : data;
+
+        dataRows.forEach((rowData) => {
+            const tr = document.createElement('tr');
+            rowData.forEach((cellData) => {
+                const td = document.createElement('td');
+                td.className = "p-2";
+                td.textContent = cellData;
+                td.contentEditable = true;
+                // No need for event listener here, we'll read from the DOM on download
+                tr.appendChild(td);
+            });
+            tbody.appendChild(tr);
+        });
+        table.appendChild(tbody);
+
+        tableWrap.innerHTML = '';
+        tableWrap.appendChild(table);
+    }
+    
+    // --- Excel Export (Updated to read directly from the rendered table) ---
+    function downloadExcel() {
+        const table = tableWrap.querySelector('table');
+        if (!table) {
+            showToast("No data to download.", true);
+            return;
+        }
+        
+        const filename = currentFile ? `${currentFile.name.split('.')[0]}.xlsx` : "converted_data.xlsx";
+
+        // Use the XLSX utility to directly convert the HTML table element to a workbook
+        const workbook = XLSX.utils.table_to_book(table, {sheet: "Sheet1"});
+        XLSX.writeFile(workbook, filename);
+        
+        showToast("Excel file downloaded!");
+    }
+
+  </script>
+</body>
+</html>
