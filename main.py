@@ -13,7 +13,7 @@ CORS(app) # Enable Cross-Origin Resource Sharing
 # for better security rather than hardcoding it.
 # You can get your key from Google AI Studio.
 API_KEY = os.environ.get("GEMINI_API_KEY", "AIzaSyBUphkuKmfqF0NaBSWx8bI-25_MuiT9Xhw")
-API_URL = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={API_KEY}"
+API_URL = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key={API_KEY}"
 
 # --- Helper Function ---
 def get_gemini_response(image_data, image_mime_type, detect_table):
@@ -103,4 +103,5 @@ def convert_image():
 if __name__ == '__main__':
     # For development, you can run it like this.
     # For production, use a proper WSGI server like Gunicorn or Waitress.
+
     app.run(debug=True, port=5001)
