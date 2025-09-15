@@ -7,7 +7,7 @@ from werkzeug.utils import secure_filename
 
 # --- Basic Configuration ---
 app = Flask(__name__)
-CORS(app) # Enable Cross-Origin Resource Sharing
+CORS(app, resources={r"/api/*": {"origins": "https://bimanthaperera-lab.github.io"}})# Enable Cross-Origin Resource Sharing
 
 # It's highly recommended to set your API key as an environment variable
 # for better security rather than hardcoding it.
@@ -105,4 +105,5 @@ if __name__ == '__main__':
     # For production, use a proper WSGI server like Gunicorn or Waitress.
 
     app.run(debug=True, port=5001)
+
 
