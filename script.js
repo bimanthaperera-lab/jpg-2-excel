@@ -104,7 +104,7 @@
       formData.append('detectTable', detectTableCheckbox.checked);
 
       try {
-        const response = await fetch('http://127.0.0.1:5001/api/convert', {
+        const response = await fetch('https://jpg-2-excel.onrender.com/api/convert', {
           method: 'POST',
           body: formData,
         });
@@ -217,4 +217,5 @@
         XLSX.writeFile(workbook, filename);
         
         showToast("Excel file downloaded!");
+
     }
