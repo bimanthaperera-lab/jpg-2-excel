@@ -148,7 +148,7 @@
       } catch (error) {
         console.error("Conversion Error:", error);
         showToast(`Try Again: ${error.message}`, true);
-        tableWrap.innerHTML = `<div class="text-red-400 p-4">Please add a clear image or try again.</div>`;
+        tableWrap.innerHTML = `<div class="text-red-400 p-4"> Server busy try again.</div>`;
         statusMsg.textContent = "Error";
       } finally {
         setLoading(false);
@@ -219,5 +219,6 @@
         showToast("Excel file downloaded!");
 
     }
+
 
 
